@@ -1,0 +1,168 @@
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
+import pandas as pd
+import os
+from datetime import datetime
+
+app = Flask(__name__)
+CORS(app)
+
+# =====================================================================
+# RUTA DEL PROYECTO
+# =====================================================================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# =====================================================================
+# FUNCIONES PARA LEER EXCEL
+# =====================================================================
+def cargar_productos():
+    archivo = os.path.join(BASE_DIR, "lista_precios.xls")
+    if not os.path.exists(archivo):
+        return []
+    try:
+        df = pd.read_excel(archivo, skiprows=5)
+        productos = []
+        for _, fila in df.iterrows():
+            try:
+                referencia = str(fila.iloc[0]).strip()
+                descripcion = str(fila.iloc[1]).strip()
+                precio = float(fila.iloc[7]) if pd.notna(fila.iloc[7]) else 0.0
+                if referencia and referencia != "nan" and "Marca" not in referencia:
+                    productos.append({
+                        "articulo_id": referencia,
+                        "descripcion": descripcion,
+                        "precio_sin_iva": round(precio, 2)
+                    })
+            except:
+                continue
+        return productos
+    except Exception as e:
+        print(f"Error cargando productos: {e}")
+        return []
+
+def cargar_clientes():
+    archivo = os.path.join(BASE_DIR, "lista_clientes.xls")
+    if not os.path.exists(archivo):
+        return []
+    try:
+        df = pd.read_excel(archivo)
+        clientes = []
+        for _, fila in df.iterrows():
+            try:
+                codigo = str(fila.iloc[0]).strip()
+                nombre = str(fila.iloc[1]).strip()
+                if codigo and codigo != "nan" and nombre and nombre != "nan":
+                    clientes.append({
+                        "cliente_id": codigo,
+                        "nombre": nombre
+                    })
+            except:
+                continue
+        return clientes
+    except Exception as e:
+        print(f"Error cargando clientes: {e}")
+        return []
+
+def cargar_vendedores():
+    archivo = os.path.join(BASE_DIR, "lista_vendedores.xls")
+    if not os.path.exists(archivo):
+        return []
+    try:
+        df = pd.read_excel(archivo)
+        vendedores = []
+        for _, fila in df.iterrows():
+            try:
+                codigo = str(fila.iloc[0]).strip()
+                nombre = str(fila.iloc[1]).strip()
+                if codigo and codigo != "nan" and nombre and nombre != "nan":
+                    vendedores.append({
+                        "vendedor_id": codigo,
+                        "nombre": nombre
+                    })
+            except:
+                continue
+        return vendedores
+    except Exception as e:
+        print(f"Error cargando vendedores: {e}")
+        return []
+
+# =====================================================================
+# DATOS EN MEMORIA
+# =====================================================================
+PRODUCTOS = cargar_productos()
+CLIENTES = cargar_clientes()
+VENDEDORES = cargar_vendedores()
+MARCAS = sorted(list(set([p.get("marca", "") for p in PRODUCTOS if p.get("marca")])))
+
+print(f"✅ Cargados {len(PRODUCTOS)} productos")
+print(f"✅ Cargados {len(CLIENTES)} clientes")
+print(f"✅ Cargados {len(VENDEDORES)} vendedores")
+print(f"✅ Cargadas {len(MARCAS)} marcas")
+
+# =====================================================================
+# ENDPOINTS
+# =====================================================================
+
+@app.route('/')
+def inicio():
+    return jsonify({
+        "mensaje": "API de Pedidos Móviles - Belher",
+        "productos": len(PRODUCTOS),
+        "clientes": len(CLIENTES),
+        "vendedores": len(VENDEDORES)
+    })
+
+@app.route('/app')
+def servir_app():
+    return send_from_directory('.', 'index.html')
+
+@app.route('/productos')
+def obtener_productos():
+    return jsonify(PRODUCTOS)
+
+@app.route('/clientes')
+def obtener_clientes():
+    return jsonify(CLIENTES)
+
+@app.route('/vendedores')
+def obtener_vendedores():
+    return jsonify(VENDEDORES)
+
+@app.route('/marcas')
+def obtener_marcas():
+    return jsonify(MARCAS)
+
+@app.route('/productos/buscar/<texto>')
+def buscar_productos(texto):
+    texto = texto.lower().strip()
+    resultados = []
+    for p in PRODUCTOS:
+        if texto in p["descripcion"].lower() or texto in p["articulo_id"].lower():
+            resultados.append(p)
+    return jsonify(resultados[:50])
+
+@app.route('/clientes/buscar/<texto>')
+def buscar_clientes(texto):
+    texto = texto.lower().strip()
+    resultados = []
+    for c in CLIENTES:
+        if texto in c["cliente_id"].lower() or texto in c["nombre"].lower():
+            resultados.append(c)
+    return jsonify(resultados[:20])
+
+@app.route('/pedidos/crear', methods=['POST'])
+def crear_pedido():
+    data = request.get_json()
+    articulos = data.get('articulos', [])
+    total = sum(item['cantidad'] * item['precio_unitario'] for item in articulos)
+    pedido_id = f"PROF-{datetime.now().strftime('%Y%m%d')}-0001"
+    return jsonify({
+        "status": "success",
+        "mensaje": f"Pedido creado: {pedido_id}",
+        "pedido_id": pedido_id,
+        "total": round(total, 2)
+    })
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
