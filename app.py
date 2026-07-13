@@ -22,21 +22,51 @@ def cargar_productos():
         print(f"⚠️ Archivo no encontrado: {archivo}")
         return []
     try:
-        df = pd.read_excel(archivo, skiprows=5)
+        df = pd.read_excel(archivo, header=None)
         productos = []
+        marca_actual = ""
+        
         for _, fila in df.iterrows():
             try:
-                referencia = str(fila.iloc[0]).strip()
-                descripcion = str(fila.iloc[1]).strip()
-                precio = float(fila.iloc[7]) if pd.notna(fila.iloc[7]) else 0.0
-                if referencia and referencia != "nan" and "Marca" not in referencia:
+                col_a = str(fila.iloc[0]).strip() if pd.notna(fila.iloc[0]) else ""
+                
+                if col_a and col_a != "nan" and not col_a.replace(".", "").replace("-", "").isdigit():
+                    marca_actual = col_a
+                    continue
+                
+                codigo = col_a
+                if not codigo or codigo == "nan":
+                    codigo = str(fila.iloc[1]).strip() if pd.notna(fila.iloc[1]) else ""
+                
+                descripcion_partes = []
+                for i in [3, 4, 5, 6]:
+                    try:
+                        valor = str(fila.iloc[i]).strip()
+                        if valor and valor != "nan" and valor != "":
+                            descripcion_partes.append(valor)
+                    except:
+                        continue
+                descripcion = " ".join(descripcion_partes) if descripcion_partes else ""
+                
+                precio = 0.0
+                for i in [11, 12]:
+                    try:
+                        if pd.notna(fila.iloc[i]):
+                            precio = float(fila.iloc[i])
+                            break
+                    except:
+                        continue
+                
+                if codigo and codigo != "nan" and codigo != "" and descripcion and descripcion != "nan":
                     productos.append({
-                        "articulo_id": referencia,
+                        "articulo_id": codigo,
                         "descripcion": descripcion,
-                        "precio_sin_iva": round(precio, 2)
+                        "precio_sin_iva": round(precio, 2),
+                        "marca": marca_actual
                     })
             except:
                 continue
+        
         print(f"✅ Productos cargados: {len(productos)}")
         return productos
     except Exception as e:
@@ -87,9 +117,7 @@ def cargar_vendedores():
         vendedores = []
         for _, fila in df.iterrows():
             try:
-                # Columna B (índice 1) = Código
                 codigo = str(fila.iloc[1]).strip() if pd.notna(fila.iloc[1]) else ""
-                # Columnas D-H (índices 3-7) = Nombre
                 nombre_partes = []
                 for i in [3, 4, 5, 6, 7]:
                     try:
