@@ -15,9 +15,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # =====================================================================
 # FUNCIONES PARA LEER EXCEL
 # =====================================================================
+
 def cargar_productos():
     archivo = os.path.join(BASE_DIR, "lista_precios.xls")
     if not os.path.exists(archivo):
+        print(f"⚠️ Archivo no encontrado: {archivo}")
         return []
     try:
         df = pd.read_excel(archivo, skiprows=5)
@@ -35,55 +37,80 @@ def cargar_productos():
                     })
             except:
                 continue
+        print(f"✅ Productos cargados: {len(productos)}")
         return productos
     except Exception as e:
-        print(f"Error cargando productos: {e}")
+        print(f"❌ Error cargando productos: {e}")
         return []
 
 def cargar_clientes():
     archivo = os.path.join(BASE_DIR, "lista_clientes.xls")
     if not os.path.exists(archivo):
+        print(f"⚠️ Archivo no encontrado: {archivo}")
         return []
     try:
-        df = pd.read_excel(archivo)
+        df = pd.read_excel(archivo, header=None)
         clientes = []
         for _, fila in df.iterrows():
             try:
-                codigo = str(fila.iloc[0]).strip()
-                nombre = str(fila.iloc[1]).strip()
-                if codigo and codigo != "nan" and nombre and nombre != "nan":
+                codigo = str(fila.iloc[1]).strip() if pd.notna(fila.iloc[1]) else ""
+                nombre_partes = []
+                for i in [4, 5, 6, 7, 8]:
+                    try:
+                        valor = str(fila.iloc[i]).strip()
+                        if valor and valor != "nan" and valor != "":
+                            nombre_partes.append(valor)
+                    except:
+                        continue
+                nombre = " ".join(nombre_partes) if nombre_partes else ""
+                
+                if codigo and codigo != "nan" and codigo != "" and nombre and nombre != "nan" and nombre != "":
                     clientes.append({
                         "cliente_id": codigo,
                         "nombre": nombre
                     })
             except:
                 continue
+        print(f"✅ Clientes cargados: {len(clientes)}")
         return clientes
     except Exception as e:
-        print(f"Error cargando clientes: {e}")
+        print(f"❌ Error cargando clientes: {e}")
         return []
 
 def cargar_vendedores():
     archivo = os.path.join(BASE_DIR, "lista_vendedores.xls")
     if not os.path.exists(archivo):
+        print(f"⚠️ Archivo no encontrado: {archivo}")
         return []
     try:
-        df = pd.read_excel(archivo)
+        df = pd.read_excel(archivo, header=None)
         vendedores = []
         for _, fila in df.iterrows():
             try:
-                codigo = str(fila.iloc[0]).strip()
-                nombre = str(fila.iloc[1]).strip()
-                if codigo and codigo != "nan" and nombre and nombre != "nan":
+                # Columna B (índice 1) = Código
+                codigo = str(fila.iloc[1]).strip() if pd.notna(fila.iloc[1]) else ""
+                # Columnas D-H (índices 3-7) = Nombre
+                nombre_partes = []
+                for i in [3, 4, 5, 6, 7]:
+                    try:
+                        valor = str(fila.iloc[i]).strip()
+                        if valor and valor != "nan" and valor != "":
+                            nombre_partes.append(valor)
+                    except:
+                        continue
+                nombre = " ".join(nombre_partes) if nombre_partes else ""
+                
+                if codigo and codigo != "nan" and codigo != "" and nombre and nombre != "nan" and nombre != "":
                     vendedores.append({
                         "vendedor_id": codigo,
                         "nombre": nombre
                     })
             except:
                 continue
+        print(f"✅ Vendedores cargados: {len(vendedores)}")
         return vendedores
     except Exception as e:
-        print(f"Error cargando vendedores: {e}")
+        print(f"❌ Error cargando vendedores: {e}")
         return []
 
 # =====================================================================
@@ -94,10 +121,11 @@ CLIENTES = cargar_clientes()
 VENDEDORES = cargar_vendedores()
 MARCAS = sorted(list(set([p.get("marca", "") for p in PRODUCTOS if p.get("marca")])))
 
-print(f"✅ Cargados {len(PRODUCTOS)} productos")
-print(f"✅ Cargados {len(CLIENTES)} clientes")
-print(f"✅ Cargados {len(VENDEDORES)} vendedores")
-print(f"✅ Cargadas {len(MARCAS)} marcas")
+print(f"📊 Resumen:")
+print(f"   - {len(PRODUCTOS)} productos")
+print(f"   - {len(CLIENTES)} clientes")
+print(f"   - {len(VENDEDORES)} vendedores")
+print(f"   - {len(MARCAS)} marcas")
 
 # =====================================================================
 # ENDPOINTS
