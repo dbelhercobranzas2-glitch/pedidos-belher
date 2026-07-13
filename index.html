@@ -528,16 +528,16 @@
 
     <script>
         // ================================================================
-        // ✅ LISTA DE URLs DE RESPALDO (PRUEBA UNA POR UNA)
+        // ✅ CONFIGURACIÓN: URL DE RENDER
         // ================================================================
-    const API_URLS = [
-    'http://192.168.0.111:8050',
-    'http://192.168.0.111:8080',
-    'http://192.168.0.111:8000',
-    'http://localhost:8050'
-];
+        const API_URL = 'https://pedidos-belher.onrender.com';
         
-        let API_URL = '';
+        // Lista de URLs de respaldo (por si la principal falla)
+        const API_URLS = [
+            'https://pedidos-belher.onrender.com',
+            'http://localhost:8050'
+        ];
+        
         let catalogoProductos = [];
         let productosFiltrados = [];
         let clientes = [];
@@ -547,47 +547,8 @@
         let productoSeleccionado = null;
         let marcaFiltroActual = '';
 
-        // ================================================================
-        // FUNCIÓN PARA PROBAR URLs HASTA ENCONTRAR UNA QUE FUNCIONE
-        // ================================================================
-        async function probarURLs() {
-            for (let url of API_URLS) {
-                try {
-                    mostrarToast(`Probando: ${url}...`, 'info');
-                    const testUrl = `${url}/productos`;
-                    const response = await fetch(testUrl, { 
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' },
-                        signal: AbortSignal.timeout(3000) // 3 segundos de espera
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data && data.length > 0) {
-                            API_URL = url;
-                            mostrarToast(`✅ Conectado a: ${url}`, 'success');
-                            return true;
-                        }
-                    }
-                } catch (error) {
-                    console.log(`❌ Falló: ${url}`);
-                }
-            }
-            return false;
-        }
-
-        // ================================================================
-        // INICIALIZACIÓN
-        // ================================================================
-        window.onload = async function() {
-            mostrarToast('🔍 Buscando conexión...', 'info');
-            
-            const conectado = await probarURLs();
-            if (conectado) {
-                await cargarTodosLosDatos();
-            } else {
-                mostrarToast('❌ No se pudo conectar a ninguna API', 'error');
-            }
+        window.onload = function() {
+            cargarTodosLosDatos();
         };
 
         async function cargarTodosLosDatos() {
