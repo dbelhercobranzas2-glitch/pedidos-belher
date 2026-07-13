@@ -532,12 +532,9 @@
         // ================================================================
         const API_URL = 'https://pedidos-belher.onrender.com';
         
-        // Lista de URLs de respaldo (por si la principal falla)
-        const API_URLS = [
-            'https://pedidos-belher.onrender.com',
-            'http://localhost:8050'
-        ];
-        
+        // ================================================================
+        // VARIABLES GLOBALES
+        // ================================================================
         let catalogoProductos = [];
         let productosFiltrados = [];
         let clientes = [];
@@ -547,27 +544,42 @@
         let productoSeleccionado = null;
         let marcaFiltroActual = '';
 
+        // ================================================================
+        // CARGA INICIAL
+        // ================================================================
         window.onload = function() {
             cargarTodosLosDatos();
         };
 
+        // ================================================================
+        // FUNCIONES DE CARGA
+        // ================================================================
         async function cargarTodosLosDatos() {
             try {
                 mostrarToast('Cargando datos...', 'info');
                 
+                // Cargar productos
                 const resProductos = await fetch(`${API_URL}/productos`);
                 catalogoProductos = await resProductos.json();
                 productosFiltrados = catalogoProductos;
+                console.log('✅ Productos cargados:', catalogoProductos.length);
                 
+                // Cargar clientes
                 const resClientes = await fetch(`${API_URL}/clientes`);
                 clientes = await resClientes.json();
+                console.log('✅ Clientes cargados:', clientes.length);
                 
+                // Cargar vendedores
                 const resVendedores = await fetch(`${API_URL}/vendedores`);
                 vendedores = await resVendedores.json();
+                console.log('✅ Vendedores cargados:', vendedores.length);
                 
+                // Cargar marcas
                 const resMarcas = await fetch(`${API_URL}/marcas`);
                 marcas = await resMarcas.json();
+                console.log('✅ Marcas cargadas:', marcas.length);
                 
+                // Cargar marcas en combo
                 const comboMarcas = document.getElementById('combo-marcas');
                 comboMarcas.innerHTML = '<option value="">-- Todas las Marcas --</option>';
                 marcas.forEach(m => {
@@ -577,6 +589,7 @@
                     comboMarcas.appendChild(opt);
                 });
                 
+                // Cargar vendedores en select
                 const selectVendedor = document.getElementById('vendedor');
                 selectVendedor.innerHTML = '<option value="">-- Seleccione un Vendedor --</option>';
                 vendedores.forEach(v => {
@@ -586,13 +599,20 @@
                     selectVendedor.appendChild(opt);
                 });
                 
+                // Cargar clientes en sugerencias (los primeros 20)
+                const sugerenciasClientes = document.getElementById('sugerencias-clientes');
+                // (Ya se cargan en la búsqueda)
+                
                 mostrarToast(`✅ ${catalogoProductos.length} productos, ${clientes.length} clientes`, 'success');
             } catch (error) {
-                mostrarToast('❌ Error cargando datos. Verifica la API.', 'error');
                 console.error('Error:', error);
+                mostrarToast('❌ Error cargando datos. Verifica la API.', 'error');
             }
         }
 
+        // ================================================================
+        // BÚSQUEDA DE CLIENTES
+        // ================================================================
         async function buscarClientes() {
             const texto = document.getElementById('buscar-cliente').value;
             const sugerencias = document.getElementById('sugerencias-clientes');
@@ -639,6 +659,9 @@
             });
         });
 
+        // ================================================================
+        // FILTRO POR MARCA
+        // ================================================================
         function filtrarPorMarca() {
             const marcaSel = document.getElementById('combo-marcas').value;
             const listaContainer = document.getElementById('productos-marca-container');
@@ -700,6 +723,9 @@
             mostrarToast('✅ Filtro eliminado', 'info');
         }
 
+        // ================================================================
+        // SELECCIÓN DE PRODUCTO
+        // ================================================================
         function seleccionarProducto(p) {
             document.getElementById('buscar-producto').value = p.descripcion;
             document.getElementById('producto-seleccionado').value = p.articulo_id;
@@ -719,6 +745,9 @@
             productoSeleccionado = null;
         }
 
+        // ================================================================
+        // BÚSQUEDA DE PRODUCTOS
+        // ================================================================
         async function buscarProductos() {
             const texto = document.getElementById('buscar-producto').value.trim();
             const sugerencias = document.getElementById('sugerencias-productos');
@@ -769,6 +798,9 @@
             }
         }
 
+        // ================================================================
+        // CARRITO
+        // ================================================================
         function agregarArticulo() {
             const idSel = document.getElementById('producto-seleccionado').value;
             const cant = parseInt(document.getElementById('prod-cantidad').value);
@@ -913,6 +945,9 @@
             renderizarCarrito();
         }
 
+        // ================================================================
+        // ENVIAR PEDIDO
+        // ================================================================
         async function enviarPedido() {
             if (carrito.length === 0) {
                 mostrarToast('⚠️ El pedido está vacío', 'error');
@@ -982,6 +1017,9 @@
             }
         }
 
+        // ================================================================
+        // TOAST
+        // ================================================================
         function mostrarToast(mensaje, tipo = 'info') {
             const toast = document.getElementById('toast');
             toast.textContent = mensaje;
