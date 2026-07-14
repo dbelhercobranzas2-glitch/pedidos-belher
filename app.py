@@ -219,6 +219,23 @@ def crear_pedido():
         "total": round(total, 2)
     })
 
+@app.route('/pedidos/centralizados', methods=['GET'])
+def pedidos_centralizados():
+    """Endpoint para centralizar pedidos por vendedor"""
+    # Por ahora retorna un mensaje simple
+    return jsonify({
+        "mensaje": "Centralización de pedidos (en desarrollo)",
+        "vendedores": []
+    })
+
+@app.route('/pedidos/historial', methods=['GET'])
+def historial_pedidos():
+    """Endpoint para ver historial de pedidos"""
+    return jsonify({
+        "mensaje": "Historial de pedidos (en desarrollo)",
+        "pedidos": []
+    })
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
