@@ -70,7 +70,6 @@ def cargar_productos_excel():
             try:
                 primer_valor = str(fila.iloc[0]).strip() if pd.notna(fila.iloc[0]) else ""
                 
-                # Detectar marca
                 if primer_valor and primer_valor != "nan":
                     if not primer_valor.replace(".", "").replace("-", "").isdigit():
                         marca_actual = primer_valor
@@ -79,7 +78,6 @@ def cargar_productos_excel():
                         continue
                 
                 if marca_actual:
-                    # Nombre del producto (columnas D-G: índices 3-6)
                     nombre_partes = []
                     for i in [3, 4, 5, 6]:
                         try:
@@ -90,12 +88,10 @@ def cargar_productos_excel():
                             continue
                     nombre_producto = " ".join(nombre_partes) if nombre_partes else ""
                     
-                    # Código (columna A o B)
                     codigo = str(fila.iloc[0]).strip() if pd.notna(fila.iloc[0]) else ""
                     if not codigo or codigo == "nan":
                         codigo = str(fila.iloc[1]).strip() if pd.notna(fila.iloc[1]) else ""
                     
-                    # PRECIO: Columnas L y M (índices 11 y 12)
                     precio = 0.0
                     for i in [11, 12]:
                         try:
@@ -402,4 +398,4 @@ def obtener_pedido(pedido_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8050, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8050)

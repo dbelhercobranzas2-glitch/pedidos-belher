@@ -528,15 +528,15 @@
 
     <script>
         // ================================================================
-        // ✅ LISTA DE URLs DE RESPALDO (PRUEBA UNA POR UNA)
+        // CONFIGURACIÓN: URLs de la API
         // ================================================================
-    const API_URLS = [
-    'http://192.168.0.111:5000',
-    'http://192.168.0.111:8050',
-    'http://192.168.0.111:8080',
-    'http://192.168.0.111:8000',
-    'http://localhost:8050'
-];
+        const API_URLS = [
+            'http://192.168.0.111:5000',   // API Central (Tu PC)
+            'http://192.168.0.111:8050',
+            'http://192.168.0.111:8080',
+            'http://192.168.0.111:8000',
+            'http://localhost:8050'
+        ];
         
         let API_URL = '';
         let catalogoProductos = [];
@@ -549,17 +549,16 @@
         let marcaFiltroActual = '';
 
         // ================================================================
-        // FUNCIÓN PARA PROBAR URLs HASTA ENCONTRAR UNA QUE FUNCIONE
+        // PROBAR URLs
         // ================================================================
         async function probarURLs() {
             for (let url of API_URLS) {
                 try {
-                    mostrarToast(`Probando: ${url}...`, 'info');
-                    const testUrl = `${url}/productos`;
-                    const response = await fetch(testUrl, { 
+                    console.log('Probando:', url);
+                    const response = await fetch(`${url}/productos`, { 
                         method: 'GET',
                         headers: { 'Content-Type': 'application/json' },
-                        signal: AbortSignal.timeout(3000) // 3 segundos de espera
+                        signal: AbortSignal.timeout(3000)
                     });
                     
                     if (response.ok) {
@@ -571,14 +570,14 @@
                         }
                     }
                 } catch (error) {
-                    console.log(`❌ Falló: ${url}`);
+                    console.log('Falló:', url);
                 }
             }
             return false;
         }
 
         // ================================================================
-        // INICIALIZACIÓN
+        // CARGA INICIAL
         // ================================================================
         window.onload = async function() {
             mostrarToast('🔍 Buscando conexión...', 'info');
@@ -626,13 +625,16 @@
                     selectVendedor.appendChild(opt);
                 });
                 
-                mostrarToast(`✅ ${catalogoProductos.length} productos, ${clientes.length} clientes`, 'success');
+                mostrarToast(`✅ ${catalogoProductos.length} productos cargados`, 'success');
             } catch (error) {
-                mostrarToast('❌ Error cargando datos. Verifica la API.', 'error');
                 console.error('Error:', error);
+                mostrarToast('❌ Error cargando datos. Verifica la API.', 'error');
             }
         }
 
+        // ================================================================
+        // CLIENTES
+        // ================================================================
         async function buscarClientes() {
             const texto = document.getElementById('buscar-cliente').value;
             const sugerencias = document.getElementById('sugerencias-clientes');
@@ -665,7 +667,7 @@
                     sugerencias.appendChild(div);
                 });
             } catch (error) {
-                console.error('Error buscando clientes:', error);
+                console.error('Error:', error);
             }
         }
 
@@ -679,6 +681,9 @@
             });
         });
 
+        // ================================================================
+        // MARCAS
+        // ================================================================
         function filtrarPorMarca() {
             const marcaSel = document.getElementById('combo-marcas').value;
             const listaContainer = document.getElementById('productos-marca-container');
@@ -700,7 +705,6 @@
             document.getElementById('marca-seleccionada-info').style.display = 'block';
             document.getElementById('marca-actual').textContent = marcaSel;
             marcaFiltroActual = marcaSel;
-            
             contadorMarca.textContent = productosFiltrados.length;
             
             if (productosFiltrados.length > 0) {
@@ -740,6 +744,9 @@
             mostrarToast('✅ Filtro eliminado', 'info');
         }
 
+        // ================================================================
+        // PRODUCTOS
+        // ================================================================
         function seleccionarProducto(p) {
             document.getElementById('buscar-producto').value = p.descripcion;
             document.getElementById('producto-seleccionado').value = p.articulo_id;
@@ -805,10 +812,13 @@
                     sugerencias.appendChild(div);
                 });
             } catch (error) {
-                console.error('Error buscando productos:', error);
+                console.error('Error:', error);
             }
         }
 
+        // ================================================================
+        // CARRITO
+        // ================================================================
         function agregarArticulo() {
             const idSel = document.getElementById('producto-seleccionado').value;
             const cant = parseInt(document.getElementById('prod-cantidad').value);
@@ -827,7 +837,7 @@
             const existente = carrito.find(item => item.articulo_id === idSel);
             if (existente) {
                 existente.cantidad += cant;
-                mostrarToast(`✅ ${prod.descripcion} - Cantidad actualizada a ${existente.cantidad}`, 'success');
+                mostrarToast(`✅ ${prod.descripcion} - Cantidad: ${existente.cantidad}`, 'success');
             } else {
                 carrito.push({
                     articulo_id: prod.articulo_id,
@@ -953,6 +963,9 @@
             renderizarCarrito();
         }
 
+        // ================================================================
+        // ENVIAR PEDIDO
+        // ================================================================
         async function enviarPedido() {
             if (carrito.length === 0) {
                 mostrarToast('⚠️ El pedido está vacío', 'error');
@@ -1022,6 +1035,9 @@
             }
         }
 
+        // ================================================================
+        // TOAST
+        // ================================================================
         function mostrarToast(mensaje, tipo = 'info') {
             const toast = document.getElementById('toast');
             toast.textContent = mensaje;
