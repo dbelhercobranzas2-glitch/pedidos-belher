@@ -26,16 +26,12 @@ class ItemPedido(BaseModel):
     articulo_id: str
     cantidad: int
     precio_unitario: float
-    descuento_lineal: Optional[float] = 0.0
 
 class PedidoSchema(BaseModel):
     cliente_id: str
     vendedor_id: str
     observaciones: Optional[str] = None
     articulos: List[ItemPedido]
-    descuento_pronto_pago: Optional[float] = 0.0
-    subtotal: Optional[float] = 0.0
-    total: Optional[float] = 0.0
 
 # =====================================================================
 # VARIABLES GLOBALES
@@ -222,7 +218,7 @@ print(f"   - {len(MARCAS_CACHE)} marcas")
 print("✅ Datos cargados correctamente")
 
 # =====================================================================
-# ENDPOINTS DE LA API
+# ENDPOINTS
 # =====================================================================
 
 @app.get("/")
@@ -239,7 +235,6 @@ def inicio():
 
 @app.get("/app")
 async def servir_app():
-    """Sirve la interfaz web (index.html) para acceso desde el móvil"""
     try:
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()
@@ -251,136 +246,62 @@ async def servir_app():
 def obtener_productos():
     return PRODUCTOS_CACHE
 
-@app.get("/productos/buscar/{texto}")
-def buscar_productos(texto: str):
-    texto = texto.lower().strip()
-    resultados = []
-    
-    if len(texto) < 2:
-        return resultados
-    
-    palabras = texto.split()
-    
-    for p in PRODUCTOS_CACHE:
-        descripcion = p["descripcion"].lower()
-        codigo = p["articulo_id"].lower()
-        
-        coincidencia = False
-        
-        if texto in descripcion or texto in codigo:
-            coincidencia = True
-        else:
-            for palabra in palabras:
-                if len(palabra) >= 2:
-                    if palabra in descripcion or palabra in codigo:
-                        coincidencia = True
-                        break
-        
-        if not coincidencia:
-            descripcion_sin_tildes = descripcion.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
-            texto_sin_tildes = texto.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
-            if texto_sin_tildes in descripcion_sin_tildes:
-                coincidencia = True
-        
-        if coincidencia:
-            resultados.append(p)
-    
-    return resultados[:50]
-
-@app.get("/productos/marca/{marca}")
-def obtener_productos_por_marca(marca: str):
-    productos = [p for p in PRODUCTOS_CACHE if p.get("marca", "").upper() == marca.upper()]
-    return productos
-
-@app.get("/marcas")
-def obtener_marcas():
-    return MARCAS_CACHE
-
 @app.get("/clientes")
 def obtener_clientes():
     return CLIENTES_CACHE
-
-@app.get("/clientes/buscar/{texto}")
-def buscar_clientes(texto: str):
-    texto = texto.lower().strip()
-    resultados = []
-    
-    if len(texto) < 2:
-        return resultados
-    
-    for c in CLIENTES_CACHE:
-        if texto in c["cliente_id"].lower() or texto in c["nombre"].lower():
-            resultados.append(c)
-    
-    return resultados[:20]
 
 @app.get("/vendedores")
 def obtener_vendedores():
     return VENDEDORES_CACHE
 
+@app.get("/marcas")
+def obtener_marcas():
+    return MARCAS_CACHE
+
+@app.get("/productos/buscar/{texto}")
+def buscar_productos(texto: str):
+    texto = texto.lower().strip()
+    resultados = []
+    for p in PRODUCTOS_CACHE:
+        if texto in p["descripcion"].lower() or texto in p["articulo_id"].lower():
+            resultados.append(p)
+    return resultados[:50]
+
+@app.get("/clientes/buscar/{texto}")
+def buscar_clientes(texto: str):
+    texto = texto.lower().strip()
+    resultados = []
+    for c in CLIENTES_CACHE:
+        if texto in c["cliente_id"].lower() or texto in c["nombre"].lower():
+            resultados.append(c)
+    return resultados[:20]
+
 @app.post("/pedidos/crear")
 def crear_pedido(pedido: PedidoSchema):
-    try:
-        for item in pedido.articulos:
-            producto = next((p for p in PRODUCTOS_CACHE if p["articulo_id"] == item.articulo_id), None)
-            if not producto:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Artículo {item.articulo_id} no encontrado"
-                )
-        
-        subtotal = 0.0
-        for item in pedido.articulos:
-            precio = item.precio_unitario
-            descuento = getattr(item, 'descuento_lineal', 0) or 0
-            precio_con_descuento = precio * (1 - descuento / 100)
-            subtotal += precio_con_descuento * item.cantidad
-        
-        subtotal = round(subtotal, 2)
-        
-        descuento_pronto = getattr(pedido, 'descuento_pronto_pago', 0) or 0
-        total = subtotal * (1 - descuento_pronto / 100)
-        total = round(total, 2)
-        
-        pedido_id = f"PROF-{datetime.now().strftime('%Y%m%d')}-{len(pedidos_procesados)+1:04d}"
-        
-        pedido_data = {
-            "id": pedido_id,
-            "cliente": pedido.cliente_id,
-            "vendedor": pedido.vendedor_id,
-            "observaciones": pedido.observaciones,
-            "articulos": [
-                {
-                    "articulo_id": item.articulo_id,
-                    "cantidad": item.cantidad,
-                    "precio_unitario": round(item.precio_unitario, 2),
-                    "descuento_lineal": getattr(item, 'descuento_lineal', 0) or 0
-                }
-                for item in pedido.articulos
-            ],
-            "subtotal": subtotal,
-            "descuento_pronto_pago": descuento_pronto,
-            "total": total,
-            "fecha": datetime.now().isoformat(),
-            "estado": "PROCESADO"
-        }
-        
-        pedidos_procesados.append(pedido_data)
-        
-        return {
-            "status": "success",
-            "mensaje": f"Pedido creado: {pedido_id}",
-            "pedido_id": pedido_id,
-            "subtotal": subtotal,
-            "descuento_pronto_pago": descuento_pronto,
-            "total": total,
-            "articulos": len(pedido.articulos)
-        }
-        
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Calcular total
+    total = sum(item.cantidad * item.precio_unitario for item in pedido.articulos)
+    
+    pedido_id = f"PROF-{datetime.now().strftime('%Y%m%d')}-{len(pedidos_procesados)+1:04d}"
+    
+    pedido_data = {
+        "id": pedido_id,
+        "cliente": pedido.cliente_id,
+        "vendedor": pedido.vendedor_id,
+        "observaciones": pedido.observaciones,
+        "articulos": [item.dict() for item in pedido.articulos],
+        "total": total,
+        "fecha": datetime.now().isoformat(),
+        "estado": "PROCESADO"
+    }
+    
+    pedidos_procesados.append(pedido_data)
+    
+    return {
+        "status": "success",
+        "mensaje": f"Pedido creado: {pedido_id}",
+        "pedido_id": pedido_id,
+        "total": total
+    }
 
 @app.get("/pedidos/historial")
 def historial_pedidos():
@@ -388,13 +309,6 @@ def historial_pedidos():
         "total_pedidos": len(pedidos_procesados),
         "pedidos": pedidos_procesados[-10:]
     }
-
-@app.get("/pedidos/{pedido_id}")
-def obtener_pedido(pedido_id: str):
-    for pedido in pedidos_procesados:
-        if pedido["id"] == pedido_id:
-            return pedido
-    raise HTTPException(status_code=404, detail="Pedido no encontrado")
 
 if __name__ == "__main__":
     import uvicorn
