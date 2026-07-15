@@ -531,10 +531,9 @@
         // CONFIGURACIÓN: URLs de la API
         // ================================================================
         const API_URLS = [
-            'http://192.168.0.111:5000',   // API Central (Tu PC)
+            'http://192.168.0.111:5000',
             'http://192.168.0.111:8050',
             'http://192.168.0.111:8080',
-            'http://192.168.0.111:8000',
             'http://localhost:8050'
         ];
         
@@ -554,8 +553,8 @@
         async function probarURLs() {
             for (let url of API_URLS) {
                 try {
-                    console.log('Probando:', url);
-                    const response = await fetch(`${url}/productos`, { 
+                    console.log('🔍 Probando:', url);
+                    const response = await fetch(`${url}/productos`, {
                         method: 'GET',
                         headers: { 'Content-Type': 'application/json' },
                         signal: AbortSignal.timeout(3000)
@@ -570,18 +569,14 @@
                         }
                     }
                 } catch (error) {
-                    console.log('Falló:', url);
+                    console.log('❌ Falló:', url);
                 }
             }
             return false;
         }
 
-        // ================================================================
-        // CARGA INICIAL
-        // ================================================================
         window.onload = async function() {
             mostrarToast('🔍 Buscando conexión...', 'info');
-            
             const conectado = await probarURLs();
             if (conectado) {
                 await cargarTodosLosDatos();
@@ -682,7 +677,7 @@
         });
 
         // ================================================================
-        // MARCAS
+        // MARCAS Y PRODUCTOS
         // ================================================================
         function filtrarPorMarca() {
             const marcaSel = document.getElementById('combo-marcas').value;
@@ -744,9 +739,6 @@
             mostrarToast('✅ Filtro eliminado', 'info');
         }
 
-        // ================================================================
-        // PRODUCTOS
-        // ================================================================
         function seleccionarProducto(p) {
             document.getElementById('buscar-producto').value = p.descripcion;
             document.getElementById('producto-seleccionado').value = p.articulo_id;
@@ -1035,9 +1027,6 @@
             }
         }
 
-        // ================================================================
-        // TOAST
-        // ================================================================
         function mostrarToast(mensaje, tipo = 'info') {
             const toast = document.getElementById('toast');
             toast.textContent = mensaje;
